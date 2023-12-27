@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    canvas {
+      border: 1px solid #000;
+      display: block;
+      margin: 20px auto;
+    }
+  </style>
+  <title>아케이드 게임</title>
+</head>
+<body>
+  <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // 우주선 설정
+    const spaceship = {
+      radius: 25,
+      x: canvas.width / 2,
+      y: canvas.height - 60,
+      speed: 10,
+      isJumping: false,
+      jumpHeight: 80,
+      jumpCount: 0,
+      mouseX: 0
+    };
+
+    // 장애물 설정
+    const obstacle = {
+      width: 50,
+      height: 50,
+      speed: 7,
+      initialSpeed: 7,
+      frequency: 25,
+      list: []
+    };
+
+    // 점수 초기화
+    let score = 0;
+
+    function drawSpaceship() {
+      ctx.fillStyle = "#0000ff";
+      ctx.beginPath();
+      ctx.arc(spaceship.x, spaceship.y, spaceship.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawObstacle(x, y) {
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, obstacle.width, obstacle.height);
+    }
+
+    function displayScore() {
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "24px Arial";
+      ctx.fillText("점수: " + score, 10, 30);
+    }
+
+    function gameOver() {
+      alert("게임 오버! 점수: " + score + "\n게임을 다시 시작합니다.");
+      resetGame();
+    }
+
+    function resetGame() {
+      score = 0;
+      spaceship.x = canvas.width / 2;
+      spaceship.y = canvas.height - 60;
+      obstacle.list = [];
+      obstacle.speed = obstacle.initialSpeed;
+    }
+
+    function gameLoop() {
+      canvas.addEventListener("mousemove", (event) => {
+        spaceship.mouseX = event.clientX - canvas.getBoundingClientRect().left;
+      });
+
+      const mouseXDiff = spaceship.mouseX - spaceship.x;
+      if (Math.abs(mouseXDiff) > spaceship.speed) {
+        spaceship.x += Math.sign(mouseXDiff) * spaceship.speed;
+      } else {
+        spaceship.x = spaceship.mouseX;
+      }
+
+      if (spaceship.isJumping) {
+        spaceship.y -= spaceship.speed * 2;
+
+        if (spaceship.y <= canvas.height - spaceship.radius - spaceship.jumpHeight) {
+          spaceship.isJumping = false;
+        }
+      } else if (spaceship.y < canvas.height - spaceship.radius) {
+        spaceship.y += spaceship.speed * 2;
+      } else {
+        spaceship.jumpCount = 0;
+      }
+
+      if (Math.floor(Math.random() * obstacle.frequency) === 1) {
+        const obstacleX = Math.floor(Math.random() * (canvas.width - obstacle.width));
+        obstacle.list.push({ x: obstacleX, y: -obstacle.height });
+      }
+
+      obstacle.list.forEach((obs, index) => {
+        obs.y += obstacle.speed;
+
+        if (
+          spaceship.x - spaceship.radius < obs.x + obstacle.width &&
+          spaceship.x + spaceship.radius > obs.x &&
+          spaceship.y - spaceship.radius < obs.y + obstacle.height &&
+          spaceship.y + spaceship.radius > obs.y
+        ) {
+          gameOver();
+        }
+
+        if (obs.y > canvas.height) {
+          obstacle.list.splice(index, 1);
+          score++;
+        }
+      });
+
+      // 시간이 지날수록 장애물의 속도 증가
+      if (score > 0 && score % 10 === 0) {
+        obstacle.speed += 0.2;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawSpaceship();
+      obstacle.list.forEach(obs => drawObstacle(obs.x, obs.y));
+
+      displayScore();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "r" || event.key === "R") {
+        resetGame();
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
